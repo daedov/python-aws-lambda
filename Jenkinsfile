@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'feature/lambda_function', url: 'https://github.com/daedov/python-aws-lambda'
+                git branch: 'develop', url: 'https://github.com/daedov/python-aws-lambda'
             }
         }
 
