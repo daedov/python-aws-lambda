@@ -15,6 +15,14 @@ pipeline {
             }
         }
 
+        stage('Script Permissions') {
+            steps {
+                script {
+                    sh 'chmod +x deploy_lambda.sh'
+                }
+            }
+        }
+
         stage('Deploy Lambda') {
             steps {
                 script {
@@ -26,10 +34,10 @@ pipeline {
 
     post {
         success {
-            echo 'Despliegue exitoso!'
+            echo 'successfully deployed!'
         }
         failure {
-            echo 'El despliegue ha fallado.'
+            echo 'failed to deploy!'
         }
     }
 }
