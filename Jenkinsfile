@@ -15,6 +15,14 @@ pipeline {
             }
         }
 
+        stage('Prepare Zip') {
+            steps {
+                script {
+                    sh 'zip -r lambda_function.zip main.py'
+                }
+            }
+        }
+
         stage('Script Permissions') {
             steps {
                 script {
