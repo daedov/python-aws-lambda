@@ -15,6 +15,15 @@ pipeline {
             }
         }
 
+        stage('Install zip') {
+            steps {
+                script {
+                    sh 'sudo apt-get update'
+                    sh 'sudo apt-get install zip'
+                }
+            }
+        }
+
         stage('Prepare Zip') {
             steps {
                 script {
