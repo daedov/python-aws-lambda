@@ -15,27 +15,10 @@ pipeline {
             }
         }
 
-        stage('Install zip') {
-            steps {
-                script {
-                    sh 'sudo apt-get update'
-                    sh 'sudo apt-get install zip'
-                }
-            }
-        }
-
-        stage('Prepare Zip') {
-            steps {
-                script {
-                    sh 'zip -r lambda_function.zip main.py'
-                }
-            }
-        }
-
         stage('Script Permissions') {
             steps {
                 script {
-                    sh 'chmod +x deploy_lambda.sh'
+                    sh 'chmod 755 deploy_lambda.sh'
                 }
             }
         }
