@@ -14,6 +14,12 @@ pipeline {
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+
         stage('Build') {
             steps {
                 sh 'zip -r ${ZIP_FILE} .'
