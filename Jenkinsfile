@@ -9,34 +9,42 @@ pipeline {
         LAMBDA_HANDLER = 'main.lambda_function'
         LAMBDA_ROLE_ARN = 'arn:aws:iam::992382788926:role/jenkins'
         ZIP_FILE = 'lambda_function.zip'
+        S3_BUCKET = 'bucket-lambda-fn'
+        S3_KEY = "lambda_deployments/${ZIP_FILE}"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build') {
             steps {
-                git branch: 'develop', url: 'https://github.com/daedov/python-aws-lambda'
+                sh 'zip -r ${ZIP_FILE} .'
             }
         }
 
-        stage('Build') {
+        stage('Upload to S3') {
             steps {
-                sh 'zip -r $ZIP_FILE .'
+                sh 'aws s3 cp ${ZIP_FILE} s3://${S3_BUCKET}/${S3_KEY} --region ${AWS_REGION}'
             }
         }
 
         stage('Create Lambda') {
             steps {
                 script {
-                    sh '''
+                    def functionExists = sh(script: "aws lambda get-function --function-name ${LAMBDA_FUNCTION_NAME} --region ${AWS_REGION} 2>/dev/null", returnStatus: true) == 0
+                    if (!functionExists) {
+                        sh """
                         aws lambda create-function \
-                        --function-name $LAMBDA_FUNCTION_NAME \
-                        --runtime python3.10 \
-                        --role $LAMBDA_ROLE_ARN \
-                        --handler $LAMBDA_HANDLER \
-                        --zip-file fileb://$ZIP_FILE \
-                        --region $AWS_REGION \
-                        --publish
-                    '''
+                            --function-name ${LAMBDA_FUNCTION_NAME} \
+                            --runtime python3.10 \
+                            --role ${LAMBDA_ROLE_ARN} \
+                            --handler ${LAMBDA_HANDLER} \
+                            --code S3Bucket=${S3_BUCKET},S3Key=${S3_KEY} \
+                            --region ${AWS_REGION} \
+                            --publish
+                        """
+                        echo "The Lambda function ${LAMBDA_FUNCTION_NAME} has been successfully created in the ${AWS_REGION} region."
+                    } else {
+                        echo "The Lambda function ${LAMBDA_FUNCTION_NAME} already exists."
+                    }
                 }
             }
         }
@@ -44,10 +52,10 @@ pipeline {
 
     post {
         success {
-            echo "The Lambda function ${LAMBDA_FUNCTION_NAME} has been successfully created in the ${AWS_REGION} region."
+            echo "Pipeline completed successfully."
         }
         failure {
-            echo "The creation of the Lambda function failed."
+            echo "Pipeline failed."
         }
     }
 }
