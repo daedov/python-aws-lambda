@@ -1,57 +1,53 @@
 pipeline {
     agent any
-    
+
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_REGION = 'us-east-1'
+        LAMBDA_FUNCTION_NAME = 'lambda-function'
+        LAMBDA_HANDLER = 'main.lambda_function'
+        LAMBDA_ROLE_ARN = 'arn:aws:iam::992382788926:role/jenkins'
+        ZIP_FILE = 'lambda_function.zip'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'develop', url: 'https://github.com/daedov/python-aws-lambda'
+                git branch: 'feature/refactor', url: 'https://github.com/daedov/python-aws-lambda'
             }
         }
 
-        stage('Terraform Init') {
+        stage('Build') {
             steps {
-                sh 'terraform init'
+                sh 'zip -r $ZIP_FILE .'
             }
         }
 
-        stage('Terraform fmt') {
+        stage('Create Lambda') {
             steps {
-                sh 'terraform fmt'
-            }
-        }
-
-        stage('Terraform plan') {
-            steps {
-                sh 'terraform plan'
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                withCredentials([string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'), string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh 'terraform apply -auto-approve'
-                }
-            }
-        }
-        
-        stage('Terraform Destroy') {
-            steps {
-                withCredentials([string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'), string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh 'terraform destroy -auto-approve'
+                script {
+                    sh '''
+                        aws lambda create-function \
+                        --function-name $LAMBDA_FUNCTION_NAME \
+                        --runtime python3.10 \
+                        --role $LAMBDA_ROLE_ARN \
+                        --handler $LAMBDA_HANDLER \
+                        --zip-file fileb://$ZIP_FILE \
+                        --region $AWS_REGION \
+                        --publish
+                    '''
                 }
             }
         }
     }
 
     post {
-        always {
-            archiveArtifacts artifacts: '**/*.tfstate', allowEmptyArchive: true
+        success {
+            echo "The Lambda function ${LAMBDA_FUNCTION_NAME} has been successfully created in the ${AWS_REGION} region."
+        }
+        failure {
+            echo "The creation of the Lambda function failed."
         }
     }
 }
