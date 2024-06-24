@@ -44,10 +44,10 @@ pipeline {
 
     post {
         success {
-            echo "La función Lambda $LAMBDA_FUNCTION_NAME ha sido creada exitosamente en la región $AWS_REGION."
+            echo "The Lambda function ${LAMBDA_FUNCTION_NAME} has been successfully created in the ${AWS_REGION} region."
         }
         failure {
-            echo "La creación de la función Lambda falló."
+            echo "The creation of the Lambda function failed."
         }
     }
 }
